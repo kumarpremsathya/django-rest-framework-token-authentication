@@ -9,10 +9,9 @@ urlpatterns = [
     path('products/<str:token>/', ProductsView.as_view(), name='products'),
     
     path('login2/', LoginView.as_view(), name='user-login'),
-    
     path('register/', RegisterView.as_view(), name='user-register'),
     
-    # path('products/', ProductListView.as_view(), name='product-list'),
-     
-
+    path('employees/', EmployeeListAPIView.as_view(), name='employee-list'),
+    path('employees/<int:pk>/', EmployeeDetailAPIView.as_view(), name='employee-detail'),
+    
 ]
