@@ -48,7 +48,7 @@ from .serializers import ProductSerializer
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-
+from django.http import HttpRequest 
 
 
 from rest_framework.response import Response
@@ -60,6 +60,8 @@ from rest_framework.response import Response
 
 import requests
 
+
+#function for showing results in same UserLoginView(APIView) class
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -97,16 +99,68 @@ class UserLoginView(APIView):
             print("token  1==", token)
             # Call get_products method to retrieve product data
             
-        if token:
-            return self.get_products(token)
-            # response=self.get_products(token)
-            # print("response=====", response)
-            # return response
-            
+            if token:
+                return self.get_products(token)
+                # response=self.get_products(token)
+                # print("response=====", response)
+                # return response
+        else:
+            # Return error response if authentication fails
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)  
             
 
 
     
+
+#function for showing results in  ProductsView(APIView) class after user logged in UserLoginView(APIView) class
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class ProductsView(APIView):
+    def get(self, request, token):
+        # Ensure the token is valid
+        try:
+            token_obj = Token.objects.get(key=token)
+            print('token_obj===' , token_obj)
+        except Token.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Retrieve product data
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+        response_data = {
+            'token': token,
+            'user_data': serializer.data,   
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+class LoginView(APIView):
+    def post(self, request):
+        # Extract username and password from request data
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        # Authenticate the user
+        user = authenticate(username=username, password=password)
+
+        if user:
+            # Generate token
+            token, _ = Token.objects.get_or_create(user=user)
+            # Debug statement
+            print("Token:", token.key)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+            
+        else:
+            # Return error response if authentication fails
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
 
 
 
