@@ -47,7 +47,7 @@ from .models import Product
 from .serializers import ProductSerializer
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
+
 from django.http import HttpRequest 
 
 
@@ -62,14 +62,113 @@ import requests
 from .models import Employee
 from .serializers import EmployeeSerializer
 
-#function for showing results in same UserLoginView(APIView) class
+
+# Django Views
+from django.contrib.auth.models import User
+from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+from .models import Product
+from .serializers import UserSerializer, ProductSerializer
+
+
+#DRF Tokem Authentication with frontend application
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+class LoginView(APIView):
+    def post(self, request):
+        # Extract username and password from request data
+        username = request.data.get('username')
+        password = request.data.get('password')
+        print("username,password====:", username,password)
+        # Authenticate the user
+        user = authenticate(username=username, password=password)
+        if user:
+            # Generate token
+            token, _ = Token.objects.get_or_create(user=user)
+            # Debug statement
+            print("Token:", token.key)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+        else:
+            # Return error response if authentication fails
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-class UserLoginView(APIView):
+class ProductsView(LoginView):
+    def get(self, request):
+        # Get the token from the request headers
+        token = request.headers.get('Authorization')
+
+        # Ensure the token is valid
+        try:
+            token_obj = Token.objects.get(key=token)
+            print('token_obj===', token_obj)
+        except Token.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Retrieve product data
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+        response_data = {
+            'token': token,
+            'user_data': serializer.data,   
+        }
+        
+        print('response_data===', response_data)
+        
+        
+        # Retrieve product data for the authenticated user
+        # products = Product.objects.filter(user=token_obj.user)
+        # serializer = ProductSerializer(products, many=True)
+        # response_data = {
+        #     'token': token,
+        #     'user_data': serializer.data,
+        # }
+        # print('response_data===', response_data)
+        
+        # Render the products.html template with the response data
+        # return render(request, 'products.html', context=response_data)
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+
+
+
+def register(request):
+    return render(request, 'register.html')
+
+def login(request):
+    return render(request, 'login.html')
+
+def products(request):
+    return render(request, 'products.html')
+
+
+
+
+
+
+
+###########################################################################################################
+
+
+
+
+# #function for showing results in same UserLoginView(APIView) class
+
+class RegisterView_2(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class UserLoginView_1(APIView):
     
     def get_products(self,token):
         
@@ -112,16 +211,22 @@ class UserLoginView(APIView):
 
 
     
+    
+
+    
+    
+    
+    
 
 #function for showing results in  ProductsView(APIView) class after user logged in UserLoginView(APIView) class
 
 
-class RegisterView(generics.CreateAPIView):
+class RegisterView_1(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
-class ProductsView(APIView):
+class ProductsView_1(APIView):
     def get(self, request, token):
         # Ensure the token is valid
         try:
@@ -139,7 +244,7 @@ class ProductsView(APIView):
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
-class LoginView(APIView):
+class LoginView_1(APIView):
     def post(self, request):
         # Extract username and password from request data
         username = request.data.get('username')
@@ -224,7 +329,7 @@ class EmployeeDetailAPIView(APIView):
 
 
 
-
+##########################################################################################################
 
 
 # # Replace 'your_token_value' with the actual token value obtained during the login process
