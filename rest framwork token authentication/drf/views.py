@@ -61,6 +61,7 @@ from rest_framework.response import Response
 import requests
 from .models import Employee
 from .serializers import EmployeeSerializer
+from rest_framework import generics, permissions
 
 
 # Django Views
@@ -100,6 +101,7 @@ class LoginView(APIView):
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class ProductsView(LoginView):
+    
     def get(self, request):
         # Get the token from the request headers
         token = request.headers.get('Authorization')
@@ -112,24 +114,24 @@ class ProductsView(LoginView):
             return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
         
         # Retrieve product data
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
-        response_data = {
-            'token': token,
-            'user_data': serializer.data,   
-        }
-        
-        print('response_data===', response_data)
-        
-        
-        # Retrieve product data for the authenticated user
-        # products = Product.objects.filter(user=token_obj.user)
+        # products = Product.objects.all()
         # serializer = ProductSerializer(products, many=True)
         # response_data = {
         #     'token': token,
-        #     'user_data': serializer.data,
+        #     'user_data': serializer.data,   
         # }
+        
         # print('response_data===', response_data)
+        
+        
+        # Retrieve product data for the authenticated user
+        products = Product.objects.filter(user=token_obj.user)
+        serializer = ProductSerializer(products, many=True)
+        response_data = {
+            'token': token,
+            'user_data': serializer.data,
+        }
+        print('response_data===', response_data)
         
         # Render the products.html template with the response data
         # return render(request, 'products.html', context=response_data)
@@ -138,8 +140,20 @@ class ProductsView(LoginView):
 
 
 
+        
+class CreateProductView(generics.CreateAPIView):
+    # permission_classes = [permissions.IsAuthenticated]
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
+
+
+    
+    
 
 def register(request):
     return render(request, 'register.html')
@@ -149,6 +163,11 @@ def login(request):
 
 def products(request):
     return render(request, 'products.html')
+
+
+def create_product(request):
+    return render(request, 'create_product.html')
+
 
 
 
